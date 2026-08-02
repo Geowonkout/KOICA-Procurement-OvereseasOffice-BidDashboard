@@ -1,7 +1,8 @@
-# KOICA 현지입찰공고 대시보드 (외부 공개 배포)
+# KOICA 현지입찰공고 대시보드 (공개 자료 기준)
 
 KOICA 전자조달 현지입찰공고(공고일·마감일·개찰일) 대시보드를 **GitHub Pages**로 공개 배포합니다.
 데이터는 대국민 공개 정보이며, **GitHub Actions가 매일 09:00(KST) 자동 수집·배포**합니다(내 PC를 켜둘 필요 없음).
+https://geowonkout.github.io/KOICA-Procurement-OvereseasOffice-BidDashboard/
 
 ## 동작 구조
 ```
