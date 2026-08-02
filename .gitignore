@@ -1,0 +1,7 @@
+.venv/
+logs/
+__pycache__/
+data.min.js
+index_standalone.html
+_site/
+.DS_Store

@@ -1,0 +1,60 @@
+name: Refresh & Deploy KOICA Bid Dashboard
+
+on:
+  schedule:
+    - cron: '0 0 * * *'      # 매일 00:00 UTC = 09:00 KST 자동 수집·배포
+  workflow_dispatch:          # 수동 실행 버튼
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Scrape KOICA & build (실패해도 계속 → 폴백 사용)
+        id: scrape
+        continue-on-error: true
+        run: python refresh.py
+
+      - name: Prepare site
+        run: |
+          mkdir -p _site
+          if [ -f index_standalone.html ]; then
+            cp index_standalone.html _site/index.html
+            echo "최신 데이터 배포"
+          else
+            cp index.html _site/index.html
+            echo "::warning::수집 실패 — 커밋된 폴백(index.html) 배포"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
