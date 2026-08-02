@@ -90,9 +90,12 @@ def main():
         log(f"수집 실패: {len(data) if data else 0}건. 페이지 구조 변경 또는 차단 가능성.")
         sys.exit(1)
 
+    kst = datetime.timezone(datetime.timedelta(hours=9))
+    built = datetime.datetime.now(tz=datetime.timezone.utc).astimezone(kst).strftime("%Y-%m-%d %H:%M")
     (HERE/"data.min.js").write_text(
-        "window.BIDS="+json.dumps(data, ensure_ascii=False, separators=(",",":"))+";", encoding="utf-8")
-    log(f"data.min.js 갱신: {len(data)}건")
+        "window.BIDS="+json.dumps(data, ensure_ascii=False, separators=(",",":"))
+        + ";window.BUILT="+json.dumps(built)+";", encoding="utf-8")
+    log(f"data.min.js 갱신: {len(data)}건 (기준일시 {built} KST)")
 
     # 단일 파일 재빌드
     tpl = (HERE/"dashboard_template.html").read_text(encoding="utf-8")

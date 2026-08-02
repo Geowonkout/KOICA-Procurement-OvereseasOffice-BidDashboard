@@ -159,14 +159,42 @@ tbody tr:hover{background:var(--panel2)}
   .nm,.nm .pj{max-width:220px}
   .glabel{width:180px;min-width:180px}
 }
+/* ===== KOICA 브랜드 + 부드러운 톤 ===== */
+:root{--brand:#0b5cab;--brand-ink:#00427f;--brand-accent:#f47920;--accent:#0b5cab;--accent-w:#dbe9f7}
+@media (prefers-color-scheme:dark){:root{--accent:#5aa9ea;--accent-w:#12314f}}
+:root[data-theme="light"]{--accent:#0b5cab;--accent-w:#dbe9f7}
+:root[data-theme="dark"]{--accent:#5aa9ea;--accent-w:#12314f}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  background:linear-gradient(125deg,var(--panel) 55%,var(--accent-w));
+  border:1px solid var(--border);border-radius:20px;padding:18px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{flex:none;width:54px;height:54px;border-radius:16px;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--brand),var(--brand-ink));box-shadow:0 6px 18px rgba(11,92,171,.38)}
+.brandtxt .wordmark{font-size:13px;font-weight:800;letter-spacing:.6px;color:var(--brand);display:flex;align-items:baseline;gap:7px}
+.brandtxt .wordmark span{color:var(--faint);font-weight:600;letter-spacing:0;font-size:11px}
+.brandtxt h1{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-top:3px}
+.brandtxt .sub{color:var(--muted);font-size:12px;margin-top:6px}
+.brandtxt .sub a{color:var(--brand);border-bottom:1px dotted var(--brand)}
+.kpi{border-radius:16px} .panel{border-radius:16px} .chip{border-radius:22px}
+.kpi{transition:.14s} .kpi:hover{transform:translateY(-1px)}
+@media(max-width:760px){.brandtxt h1{font-size:18px}.logo{width:46px;height:46px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div class="title">
-      <h1>KOICA 현지입찰공고 대시보드</h1>
-      <div class="sub">공고일 · 입찰서제출마감일 · 개찰일 통합 관리 &nbsp;·&nbsp; 출처: <a href="https://nebid.koica.go.kr/oep/lobi/localBidManageList.do?P_PRCURE_BSNS_SE_CD=ABID" target="_blank">KOICA 전자조달 현지입찰공고</a> &nbsp;·&nbsp; <span id="meta"></span></div>
+  <div class="hero">
+    <div class="brand">
+      <div class="logo" aria-label="KOICA">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/>
+          <path d="M3.2 12h17.6M4.8 7h14.4M4.8 17h14.4"/>
+        </svg>
+      </div>
+      <div class="brandtxt">
+        <div class="wordmark">KOICA <span>한국국제협력단</span></div>
+        <h1>현지입찰공고 대시보드</h1>
+        <div class="sub">출처: <a href="https://nebid.koica.go.kr/oep/lobi/localBidManageList.do?P_PRCURE_BSNS_SE_CD=ABID" target="_blank">KOICA전자조달시스템-현지입찰공고</a> &nbsp;·&nbsp; 기준일시 <span id="meta"></span></div>
+      </div>
     </div>
     <button class="theme-btn" id="themeBtn">◐ 테마</button>
   </div>
@@ -174,9 +202,6 @@ tbody tr:hover{background:var(--panel2)}
   <div class="kpis" id="kpis"></div>
 
   <div class="panel tools">
-    <div class="filtrow">
-      <span class="lbl help" tabindex="0" data-tip="공고일·마감일·개찰일 중 하나라도 해당 연도에 포함되면 그 회계연도에 포함됩니다. 세 일자가 서로 다른 해에 걸치면 한 공고가 여러 회계연도에 함께 표시됩니다." title="공고일·마감일·개찰일 중 하나라도 해당 연도에 포함되면 그 회계연도에 포함됩니다(여러 연도에 중복 표시 가능).">회계연도&#8202;&#9432;</span><span id="fyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
-    </div>
     <div class="filtrow">
       <span class="lbl">상태</span><span id="stChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
@@ -260,16 +285,17 @@ const DATA=(window.BIDS||[]).map(b=>{
     if(ddayVal<=7){status='마감임박';scls='amber';}else{status='접수중';scls='green';}
   } else if(od&&today<=od){status='개찰예정';scls='blue';ddayVal=diffDays(od,today);ddayLabel='개찰까지';}
   else {status='개찰완료';scls='gray';ddayVal=od?diffDays(today,od):null;ddayLabel='개찰경과';}
-  return {...b,_nd:nd,_dl:dl,_od:od,fys,span,urgent,status,scls,ddayVal,ddayLabel};
-});
+  return {...b,_nd:nd,_dl:dl,_od:od,span,urgent,status,scls,ddayVal,ddayLabel};
+})
+// 현재 관련 공고만: 개찰완료 후 100일 초과는 제외 (진행/임박/공고예정/개찰예정/최근개찰만 표시)
+.filter(b=> !(b.status==='개찰완료' && b._od && diffDays(today,b._od)>100));
 DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
 /* ===== state ===== */
-const state={fy:'all',status:'all',ty:new Set(),ur:'all',rg:'all',co:'all',q:'',view:'table',sort:'od',dir:-1,kpi:null};
+const state={status:'all',ty:new Set(),ur:'all',rg:'all',co:'all',q:'',view:'table',sort:'od',dir:-1,kpi:null};
 
 /* ===== filter options ===== */
 const REGION_ORDER=['동남아시아','서남아태평양','아프리카','유라시아중동','중남미','기타/공통'];
-const FYS=[...new Set(DATA.flatMap(b=>b.fys))].sort().reverse();
 const RGS=REGION_ORDER.filter(r=>DATA.some(b=>b.rg===r));
 const COS=[...new Set(DATA.map(b=>b.co))].sort((a,b)=>a.localeCompare(b,'ko'));
 const TYS=['공사','물품','용역'];
@@ -278,9 +304,6 @@ const STS=[['all','전체',''],['접수중','접수중','green'],['마감임박'
 /* build chips */
 function chip(text,on,cls,onclick){const b=document.createElement('button');b.className='chip'+(on?' on'+(cls?' c-'+cls:''):'');b.textContent=text;b.onclick=onclick;return b;}
 function renderFilters(){
-  const fy=$('#fyChips');fy.innerHTML='';
-  fy.appendChild(chip('전체',state.fy==='all',null,()=>{state.fy='all';apply();}));
-  FYS.forEach(f=>fy.appendChild(chip('FY'+f,state.fy===f,null,()=>{state.fy=f;apply();})));
   const st=$('#stChips');st.innerHTML='';
   STS.forEach(([v,label,cls])=>st.appendChild(chip(label,state.status===v,cls,()=>{state.status=v;state.kpi=null;apply();})));
   const ty=$('#tyChips');ty.innerHTML='';
@@ -300,7 +323,6 @@ function renderFilters(){
 /* ===== filtering ===== */
 function matches(b,skip){
   skip=skip||{};
-  if(!skip.fy&&state.fy!=='all'&&!b.fys.includes(state.fy))return false;
   if(!skip.status&&state.status!=='all'&&b.status!==state.status)return false;
   if(!skip.ty&&state.ty.size&&!state.ty.has(b.ty))return false;
   if(!skip.ur&&state.ur!=='all'){const u=b.urgent===true?'긴급':(b.urgent===false?'일반':null);if(u!==state.ur)return false;}
@@ -457,13 +479,13 @@ $$('.viewtabs button').forEach(btn=>btn.onclick=()=>{
   apply();
 });
 $('#q').oninput=e=>{state.q=e.target.value;apply();};
-$('#reset').onclick=()=>{Object.assign(state,{fy:'all',status:'all',ur:'all',rg:'all',co:'all',q:''});state.ty.clear();$('#q').value='';apply();};
+$('#reset').onclick=()=>{Object.assign(state,{status:'all',ur:'all',rg:'all',co:'all',q:''});state.ty.clear();$('#q').value='';apply();};
 let theme=null;
 $('#themeBtn').onclick=()=>{const cur=document.documentElement.getAttribute('data-theme');const isDark=cur?cur==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.setAttribute('data-theme',isDark?'light':'dark');};
 
-/* meta */
-$('#meta').textContent='총 '+DATA.length+'건 · 기준일 '+today.toISOString().slice(0,10);
-$('#foot2').textContent='표시 기준일: '+today.toLocaleDateString('ko-KR');
+/* meta: 기준일시 = 데이터 수집 시각(KST). window.BUILT 없으면 접속일로 대체 */
+$('#meta').textContent=(window.BUILT ? window.BUILT : today.toISOString().slice(0,10))+' KST';
+$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 100일 초과 공고는 표시에서 제외';
 
 apply();
 </script>
