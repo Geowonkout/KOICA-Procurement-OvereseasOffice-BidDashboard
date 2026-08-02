@@ -303,8 +303,8 @@ const DATA=(window.BIDS||[]).map(b=>{
   else {status='개찰완료';scls='gray';ddayVal=od?diffDays(today,od):null;ddayLabel='개찰경과';}
   return {...b,_nd:nd,_dl:dl,_od:od,span,urgent,status,scls,ddayVal,ddayLabel};
 })
-// 현재 관련 공고만: 개찰완료 후 90일 초과는 제외 (진행/임박/공고예정/개찰예정/최근개찰만 표시)
-.filter(b=> !(b.status==='개찰완료' && b._od && diffDays(today,b._od)>90));
+// 현재 관련 공고만: 개찰완료 후 60일 초과는 제외 (진행/임박/공고예정/개찰예정/최근개찰만 표시)
+.filter(b=> !(b.status==='개찰완료' && b._od && diffDays(today,b._od)>60));
 DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
 /* ===== state ===== */
@@ -523,7 +523,7 @@ $('#themeBtn').onclick=()=>{const cur=document.documentElement.getAttribute('dat
 
 /* meta: 기준일시 = 데이터 수집 시각(KST). window.BUILT 없으면 접속일로 대체 */
 $('#meta').textContent=(window.BUILT ? window.BUILT : today.toISOString().slice(0,10))+' KST';
-$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 90일 초과 공고는 표시에서 제외';
+$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 60일 초과 공고는 표시에서 제외';
 
 apply();
 </script>
