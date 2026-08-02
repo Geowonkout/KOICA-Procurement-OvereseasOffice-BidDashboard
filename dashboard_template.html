@@ -168,7 +168,7 @@ tbody tr:hover{background:var(--panel2)}
   background:linear-gradient(125deg,var(--panel) 55%,var(--accent-w));
   border:1px solid var(--border);border-radius:20px;padding:18px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
 .brand{display:flex;align-items:center;gap:16px}
-.koica-logo{height:30px;width:auto;display:block}
+.koica-logo{height:26px;width:auto;display:block}
 .koica-word{display:none;font-weight:900;font-size:30px;letter-spacing:-1.5px;color:var(--brand);line-height:1}
 .divider-v{width:1px;align-self:stretch;min-height:42px;background:var(--border)}
 .brandtxt h1{font-size:21px;font-weight:800;letter-spacing:-.4px}
@@ -195,15 +195,14 @@ tbody tr:hover{background:var(--panel2)}
 .hbar .ht i{position:absolute;left:0;top:0;height:100%;border-radius:5px;background:var(--accent)}
 .hbar .hv{text-align:right;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.charts{grid-template-columns:1fr}.chartcard{border-right:0;border-bottom:1px solid var(--border2);padding:14px 0}.chartcard:last-child{border-bottom:0}}
+.logo-wrap{display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:6px 11px;box-shadow:0 1px 3px rgba(16,24,40,.12)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hero">
     <div class="brand">
-      <img id="koicaImg" class="koica-logo" src="koica-logo.png" alt="KOICA"
-           onerror="this.style.display='none';document.getElementById('koicaWord').style.display='inline-block'">
-      <span id="koicaWord" class="koica-word">KOICA</span>
+      <span class="logo-wrap"><img class="koica-logo" src="KOICA_Logo%20Mark(BLUE).png" alt="KOICA"></span>
       <div class="divider-v"></div>
       <div class="brandtxt">
         <h1>현지입찰공고 대시보드</h1>

@@ -51,6 +51,8 @@ jobs:
             cp index.html _site/index.html
             echo "::warning::수집 실패 — 커밋된 폴백(index.html) 배포"
           fi
+          # 로고 PNG 함께 게시
+          cp "KOICA_Logo Mark(BLUE).png" _site/ 2>/dev/null || echo "::warning::로고 PNG 없음"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
