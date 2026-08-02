@@ -193,6 +193,10 @@ tbody tr:hover{background:var(--panel2)}
 .hbar .hl{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbar .ht{position:relative;height:9px;background:var(--border2);border-radius:5px;overflow:hidden}
 .hbar .ht i{position:absolute;left:0;top:0;height:100%;border-radius:5px;background:var(--accent)}
+.hbar .htk{height:9px;background:var(--border2);border-radius:5px;overflow:hidden;display:flex}
+.hbar .htk i{height:100%;display:block}
+.tylg{display:flex;gap:10px;font-weight:500}
+.tylg span{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:10.5px}
 .hbar .hv{text-align:right;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.charts{grid-template-columns:1fr}.chartcard{border-right:0;border-bottom:1px solid var(--border2);padding:14px 0}.chartcard:last-child{border-bottom:0}}
 .logo-wrap{display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:6px 11px;box-shadow:0 1px 3px rgba(16,24,40,.12)}
@@ -485,9 +489,16 @@ function renderCharts(rows){
   const stc={}; rows.forEach(b=>stc[b.status]=(stc[b.status]||0)+1);
   const seg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<i style="width:${stc[s]/total*100}%;background:var(--${cl})" title="${s} ${stc[s]}"></i>`).join('');
   const leg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<span><i class="dotmark" style="background:var(--${cl})"></i>${s} <b>${stc[s]}</b></span>`).join('');
-  const rgc={}; rows.forEach(b=>rgc[b.rg]=(rgc[b.rg]||0)+1);
-  const rgMax=Math.max(1,...Object.values(rgc));
-  const rgBars=RGS.filter(r=>rgc[r]).sort((a,b)=>rgc[b]-rgc[a]).map(r=>`<div class="hbar"><span class="hl">${r.replace('/공통','')}</span><span class="ht"><i style="width:${rgc[r]/rgMax*100}%"></i></span><span class="hv">${rgc[r]}</span></div>`).join('');
+  const TYORD=[['공사','amber'],['물품','blue'],['용역','violet']];
+  const tyLeg=TYORD.map(([t,cl])=>`<span><i class="dotmark" style="background:var(--${cl})"></i>${t}</span>`).join('');
+  // 권역별: 계약구분(공사/물품/용역) 색상 스택 막대
+  const rgt={}; rows.forEach(b=>{(rgt[b.rg]=rgt[b.rg]||{})[b.ty]=(rgt[b.rg][b.ty]||0)+1;});
+  const rgTot={}; Object.keys(rgt).forEach(r=>rgTot[r]=Object.values(rgt[r]).reduce((a,x)=>a+x,0));
+  const rgMax=Math.max(1,...Object.values(rgTot));
+  const rgBars=RGS.filter(r=>rgTot[r]).sort((a,b)=>rgTot[b]-rgTot[a]).map(r=>{
+    const segs=TYORD.filter(([t])=>rgt[r][t]).map(([t,cl])=>`<i style="width:${rgt[r][t]/rgMax*100}%;background:var(--${cl})" title="${r.replace('/공통','')} · ${t} ${rgt[r][t]}"></i>`).join('');
+    return `<div class="hbar"><span class="hl">${r.replace('/공통','')}</span><span class="htk">${segs}</span><span class="hv">${rgTot[r]}</span></div>`;
+  }).join('');
   const tyc={}; rows.forEach(b=>tyc[b.ty]=(tyc[b.ty]||0)+1);
   const tyMax=Math.max(1,...Object.values(tyc));
   const tyCl={'공사':'amber','물품':'blue','용역':'violet'};
@@ -495,7 +506,7 @@ function renderCharts(rows){
   const none='<span style="color:var(--faint);font-size:11.5px">해당 없음</span>';
   c.innerHTML=`
     <div class="chartcard"><div class="ct">상태 분포 <b>${rows.length}건</b></div><div class="stack">${seg||'<i style="width:100%;background:var(--border2)"></i>'}</div><div class="slegend">${leg||none}</div></div>
-    <div class="chartcard"><div class="ct">권역별</div><div class="hbars">${rgBars||none}</div></div>
+    <div class="chartcard"><div class="ct">권역별 <span class="tylg">${tyLeg}</span></div><div class="hbars">${rgBars||none}</div></div>
     <div class="chartcard"><div class="ct">계약구분</div><div class="hbars">${tyBars||none}</div></div>`;
 }
 
