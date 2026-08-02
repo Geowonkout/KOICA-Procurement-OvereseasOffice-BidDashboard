@@ -73,6 +73,17 @@ h1,h2,h3{margin:0}
 .tools{padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}
 .filtrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filtrow .lbl{font-size:11.5px;color:var(--faint);font-weight:700;min-width:46px;text-transform:uppercase;letter-spacing:.3px}
+.lbl.help{cursor:help;position:relative;color:var(--muted);outline:none}
+.lbl.help:hover,.lbl.help:focus{color:var(--accent)}
+.lbl.help:hover::after,.lbl.help:focus::after{
+  content:attr(data-tip);position:absolute;left:0;top:160%;z-index:60;
+  width:300px;max-width:70vw;white-space:normal;text-align:left;
+  background:var(--txt);color:var(--panel);padding:10px 12px;border-radius:9px;
+  font-size:11.5px;font-weight:500;line-height:1.6;letter-spacing:0;text-transform:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none;}
+.lbl.help:hover::before,.lbl.help:focus::before{
+  content:"";position:absolute;left:14px;top:150%;z-index:61;border:6px solid transparent;
+  border-bottom-color:var(--txt);}
 .chip{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12.5px;font-weight:600;transition:.1s;white-space:nowrap}
 .chip:hover{color:var(--txt);border-color:var(--faint)}
 .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -164,7 +175,7 @@ tbody tr:hover{background:var(--panel2)}
 
   <div class="panel tools">
     <div class="filtrow">
-      <span class="lbl">회계연도</span><span id="fyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+      <span class="lbl help" tabindex="0" data-tip="공고일·마감일·개찰일 중 하나라도 해당 연도에 포함되면 그 회계연도에 포함됩니다. 세 일자가 서로 다른 해에 걸치면 한 공고가 여러 회계연도에 함께 표시됩니다." title="공고일·마감일·개찰일 중 하나라도 해당 연도에 포함되면 그 회계연도에 포함됩니다(여러 연도에 중복 표시 가능).">회계연도&#8202;&#9432;</span><span id="fyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
     <div class="filtrow">
       <span class="lbl">상태</span><span id="stChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
@@ -241,6 +252,7 @@ function fmtFull(s){return s||'—';}
 /* ===== enrich ===== */
 const DATA=(window.BIDS||[]).map(b=>{
   const nd=parseD(b.nd), dl=parseD(b.dl), od=parseD(b.od);
+  const fys=[...new Set([nd,dl,od].filter(Boolean).map(d=>String(d.getFullYear())))]; // 공고/마감/개찰 중 하나라도 속한 연도
   const span = (nd&&dl)?diffDays(dl,nd):null;      // 공고~마감 일수
   const urgent = span!==null ? span<40 : null;      // 40일 미만 = 긴급
   let status,scls,ddayVal=null,ddayLabel='';
@@ -250,7 +262,7 @@ const DATA=(window.BIDS||[]).map(b=>{
     if(ddayVal<=7){status='마감임박';scls='amber';}else{status='접수중';scls='green';}
   } else if(od&&today<=od){status='개찰예정';scls='blue';ddayVal=diffDays(od,today);ddayLabel='개찰까지';}
   else {status='개찰완료';scls='gray';ddayVal=od?diffDays(today,od):null;ddayLabel='개찰경과';}
-  return {...b,_nd:nd,_dl:dl,_od:od,span,urgent,status,scls,ddayVal,ddayLabel};
+  return {...b,_nd:nd,_dl:dl,_od:od,fys,span,urgent,status,scls,ddayVal,ddayLabel};
 });
 DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
@@ -259,7 +271,7 @@ const state={fy:'all',status:'all',ty:new Set(),ur:'all',rg:'all',co:'all',q:'',
 
 /* ===== filter options ===== */
 const REGION_ORDER=['동남아시아','서남아태평양','아프리카','유라시아중동','중남미','기타/공통'];
-const FYS=[...new Set(DATA.map(b=>b.fy))].sort().reverse();
+const FYS=[...new Set(DATA.flatMap(b=>b.fys))].sort().reverse();
 const RGS=REGION_ORDER.filter(r=>DATA.some(b=>b.rg===r));
 const COS=[...new Set(DATA.map(b=>b.co))].sort((a,b)=>a.localeCompare(b,'ko'));
 const TYS=['공사','물품','용역'];
@@ -278,27 +290,28 @@ function renderFilters(){
   TYS.forEach(t=>ty.appendChild(chip(t,state.ty.has(t),null,()=>{state.ty.has(t)?state.ty.delete(t):state.ty.add(t);apply();})));
   const ur=$('#urChips');ur.innerHTML='';
   [['all','전체',''],['긴급','긴급','red'],['일반','일반','gray']].forEach(([v,label,cls])=>ur.appendChild(chip(label,state.ur===v,cls,()=>{state.ur=v;apply();})));
+  const rgBase=DATA.filter(b=>matches(b,{rg:true,co:true}));  // 권역/국가 제외한 현재 필터 반영
   const rg=$('#rgChips');rg.innerHTML='';
-  rg.appendChild(chip('전체',state.rg==='all',null,()=>{state.rg='all';apply();}));
-  RGS.forEach(r=>{const n=DATA.filter(b=>b.rg===r).length;rg.appendChild(chip(r+' '+n,state.rg===r,null,()=>{state.rg=(state.rg===r?'all':r);state.co='all';apply();}));});
+  rg.appendChild(chip('전체 '+rgBase.length,state.rg==='all',null,()=>{state.rg='all';state.co='all';apply();}));
+  RGS.forEach(r=>{const n=rgBase.filter(b=>b.rg===r).length;rg.appendChild(chip(r+' '+n,state.rg===r,null,()=>{state.rg=(state.rg===r?'all':r);state.co='all';apply();}));});
   // country list scoped to selected region
   const coPool = state.rg==='all'?COS:[...new Set(DATA.filter(b=>b.rg===state.rg).map(b=>b.co))].sort((a,b)=>a.localeCompare(b,'ko'));
   const co=$('#coSel');co.innerHTML='<option value="all">국가 전체</option>'+coPool.map(c=>`<option value="${c}">${c}</option>`).join('');co.value=coPool.includes(state.co)?state.co:'all';co.onchange=()=>{state.co=co.value;apply();};
 }
 
 /* ===== filtering ===== */
-function filtered(){
-  return DATA.filter(b=>{
-    if(state.fy!=='all'&&b.fy!==state.fy)return false;
-    if(state.status!=='all'&&b.status!==state.status)return false;
-    if(state.ty.size&&!state.ty.has(b.ty))return false;
-    if(state.ur!=='all'){const u=b.urgent===true?'긴급':(b.urgent===false?'일반':null);if(u!==state.ur)return false;}
-    if(state.rg!=='all'&&b.rg!==state.rg)return false;
-    if(state.co!=='all'&&b.co!==state.co)return false;
-    if(state.q){const q=state.q.toLowerCase();if(!(b.nm.toLowerCase().includes(q)||(b.pj||'').toLowerCase().includes(q)||b.no.toLowerCase().includes(q)||b.mg.includes(q)||b.co.includes(q)||b.rg.includes(q)))return false;}
-    return true;
-  });
+function matches(b,skip){
+  skip=skip||{};
+  if(!skip.fy&&state.fy!=='all'&&!b.fys.includes(state.fy))return false;
+  if(!skip.status&&state.status!=='all'&&b.status!==state.status)return false;
+  if(!skip.ty&&state.ty.size&&!state.ty.has(b.ty))return false;
+  if(!skip.ur&&state.ur!=='all'){const u=b.urgent===true?'긴급':(b.urgent===false?'일반':null);if(u!==state.ur)return false;}
+  if(!skip.rg&&state.rg!=='all'&&b.rg!==state.rg)return false;
+  if(!skip.co&&state.co!=='all'&&b.co!==state.co)return false;
+  if(!skip.q&&state.q){const q=state.q.toLowerCase();if(!(b.nm.toLowerCase().includes(q)||(b.pj||'').toLowerCase().includes(q)||b.no.toLowerCase().includes(q)||b.mg.includes(q)||b.co.includes(q)||b.rg.includes(q)))return false;}
+  return true;
 }
+function filtered(){return DATA.filter(b=>matches(b));}
 
 /* ===== KPIs ===== */
 function renderKPIs(){

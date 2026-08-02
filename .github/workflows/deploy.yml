@@ -1,6 +1,8 @@
 name: Refresh & Deploy KOICA Bid Dashboard
 
 on:
+  push:
+    branches: [main]          # 소스 변경 푸시 시 즉시 재빌드·배포
   schedule:
     - cron: '0 0 * * *'      # 매일 00:00 UTC = 09:00 KST 자동 수집·배포
   workflow_dispatch:          # 수동 실행 버튼
