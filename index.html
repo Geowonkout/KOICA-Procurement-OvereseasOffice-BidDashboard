@@ -157,6 +157,21 @@ tbody tr:hover{background:var(--panel2)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .dotmark{width:9px;height:9px;border-radius:50%;display:inline-block}
 .empty{padding:60px 20px;text-align:center;color:var(--faint)}
+/* 캘린더 */
+#cal{padding:16px 18px;overflow-x:auto}
+.cal-month{margin-bottom:20px;min-width:640px}
+.cal-h{font-weight:800;font-size:14px;margin-bottom:8px;color:var(--txt)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-wd{font-size:11px;color:var(--muted);font-weight:700;text-align:center;padding:4px 0}
+.cal-wd.sun{color:var(--red)}
+.cal-cell{min-height:72px;border:1px solid var(--border2);border-radius:8px;padding:4px 4px 5px;background:var(--panel2);display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.cal-cell.blank{background:transparent;border:0}
+.cal-cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-w)}
+.cal-dnum{font-size:11px;color:var(--muted);font-weight:700;line-height:1}
+.cal-cell.today .cal-dnum{color:var(--accent)}
+.cal-ev{font-size:9.5px;font-weight:700;border-radius:4px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.cal-ev.ev-dl{background:var(--amber-bg);color:var(--amber)}
+.cal-ev.ev-od{background:var(--blue-bg);color:var(--blue)}
 .foot{margin-top:18px;color:var(--faint);font-size:11.5px;text-align:center}
 @media(max-width:900px){
   .kpis{grid-template-columns:repeat(2,1fr)}
@@ -246,6 +261,7 @@ tbody tr:hover{background:var(--panel2)}
       <div class="viewtabs">
         <button data-v="table" class="on">표</button>
         <button data-v="gantt">타임라인</button>
+        <button data-v="cal">캘린더</button>
       </div>
     </div>
     <div class="filtrow" style="margin-top:-2px">
@@ -282,6 +298,16 @@ tbody tr:hover{background:var(--panel2)}
     </div>
   </div>
 
+  <div class="panel" id="calView" style="display:none">
+    <div id="cal"></div>
+    <div class="legend">
+      <span><i class="dotmark" style="background:var(--amber)"></i>마감(마)</span>
+      <span><i class="dotmark" style="background:var(--blue)"></i>개찰(개)</span>
+      <span><i class="dotmark" style="background:var(--accent)"></i>오늘</span>
+      <span style="color:var(--faint)">· 필터 조건에 맞는 마감·개찰 일정만 표시</span>
+    </div>
+  </div>
+
   <div class="foot">KOICA 현지입찰공고 데이터 기반 · 상태는 접속일 기준 자동 계산 · <span id="foot2"></span></div>
 </div>
 
@@ -306,10 +332,12 @@ const DATA=(window.BIDS||[]).map(b=>{
   const urgent = span!==null ? span<40 : null;      // 40일 미만 = 긴급
   let status,scls,ddayVal=null,ddayLabel='';
   if(nd&&today<nd){status='공고예정';scls='violet';ddayVal=diffDays(nd,today);ddayLabel='공고까지';}
+  // 개찰예정: (마감 지남 & 개찰 전) 또는 (개찰 3일 전 이내) — 마감·개찰이 같거나 1~3일 차인 건 포함
+  else if(od&&today<=od&&((!dl||today>dl)||diffDays(od,today)<=3)){status='개찰예정';scls='blue';ddayVal=diffDays(od,today);ddayLabel='개찰까지';}
   else if(dl&&today<=dl){                            // 접수중
     ddayVal=diffDays(dl,today);ddayLabel='마감까지';
     if(ddayVal<=7){status='마감임박';scls='amber';}else{status='접수중';scls='green';}
-  } else if(od&&today<=od){status='개찰예정';scls='blue';ddayVal=diffDays(od,today);ddayLabel='개찰까지';}
+  }
   else {status='개찰완료';scls='gray';ddayVal=od?diffDays(today,od):null;ddayLabel='개찰경과';}
   return {...b,_nd:nd,_dl:dl,_od:od,span,urgent,status,scls,ddayVal,ddayLabel};
 })
@@ -523,6 +551,37 @@ function renderCharts(rows){
   const tt=c.querySelector('.ty-toggle'); if(tt) tt.onclick=()=>{showTy=!showTy; renderCharts(rows);};
 }
 
+/* ===== 캘린더 (마감·개찰 일정) ===== */
+function renderCalendar(rows){
+  const el=$('#cal'); if(!el) return;
+  const evs=[];
+  rows.forEach(b=>{ if(b._dl) evs.push({d:b._dl,t:'마감',b}); if(b._od) evs.push({d:b._od,t:'개찰',b}); });
+  if(!evs.length){ el.innerHTML='<div class="empty">표시할 마감·개찰 일정이 없습니다.</div>'; return; }
+  const ym=d=>d.getFullYear()*12+d.getMonth(), curM=ym(today);
+  let minM=Math.min(...evs.map(e=>ym(e.d))), maxM=Math.max(...evs.map(e=>ym(e.d)));
+  minM=Math.max(minM,curM-1); maxM=Math.min(maxM,curM+6); minM=Math.min(minM,curM);
+  const byDay={};
+  evs.forEach(e=>{const k=e.d.getFullYear()+'-'+e.d.getMonth()+'-'+e.d.getDate();(byDay[k]=byDay[k]||[]).push(e);});
+  const WD=['일','월','화','수','목','금','토'];
+  let html='';
+  for(let m=minM;m<=maxM;m++){
+    const yr=Math.floor(m/12), mo=((m%12)+12)%12;
+    const start=new Date(yr,mo,1).getDay(), days=new Date(yr,mo+1,0).getDate();
+    html+=`<div class="cal-month"><div class="cal-h">${yr}년 ${mo+1}월</div><div class="cal-grid">`;
+    WD.forEach((w,i)=>html+=`<div class="cal-wd${i===0?' sun':''}">${w}</div>`);
+    for(let i=0;i<start;i++) html+='<div class="cal-cell blank"></div>';
+    for(let dd=1;dd<=days;dd++){
+      const k=yr+'-'+mo+'-'+dd;
+      const isToday=(yr===today.getFullYear()&&mo===today.getMonth()&&dd===today.getDate());
+      const list=(byDay[k]||[]).sort((a,b)=>a.t.localeCompare(b.t));
+      const chips=list.map(e=>`<div class="cal-ev ${e.t==='마감'?'ev-dl':'ev-od'}" title="${e.t} · ${e.b.no} · ${e.b.nm}">${e.t[0]} ${e.b.co}</div>`).join('');
+      html+=`<div class="cal-cell${isToday?' today':''}"><div class="cal-dnum">${dd}</div>${chips}</div>`;
+    }
+    html+='</div></div>';
+  }
+  el.innerHTML=html;
+}
+
 /* ===== apply ===== */
 function apply(){
   const rows=filtered();
@@ -530,7 +589,9 @@ function apply(){
   const ug=rows.filter(b=>b.urgent===true).length, ng=rows.filter(b=>b.urgent===false).length;
   $('#urgentNote').innerHTML=`긴급 <b style="color:var(--red)">${ug}</b> · 일반 <b>${ng}</b>`;
   renderKPIs();renderFilters();renderHead();renderCharts(rows);
-  if(state.view==='table')renderTable(rows);else renderGantt(rows);
+  if(state.view==='table')renderTable(rows);
+  else if(state.view==='gantt')renderGantt(rows);
+  else renderCalendar(rows);
 }
 
 /* ===== view + theme ===== */
@@ -539,6 +600,7 @@ $$('.viewtabs button').forEach(btn=>btn.onclick=()=>{
   state.view=btn.dataset.v;
   $('#tableView').style.display=state.view==='table'?'':'none';
   $('#ganttView').style.display=state.view==='gantt'?'':'none';
+  $('#calView').style.display=state.view==='cal'?'':'none';
   apply();
 });
 $('#q').oninput=e=>{state.q=e.target.value;apply();};
