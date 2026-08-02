@@ -168,30 +168,44 @@ tbody tr:hover{background:var(--panel2)}
   background:linear-gradient(125deg,var(--panel) 55%,var(--accent-w));
   border:1px solid var(--border);border-radius:20px;padding:18px 24px;margin-bottom:20px;box-shadow:var(--shadow)}
 .brand{display:flex;align-items:center;gap:16px}
-.logo{flex:none;width:54px;height:54px;border-radius:16px;display:grid;place-items:center;
-  background:linear-gradient(140deg,var(--brand),var(--brand-ink));box-shadow:0 6px 18px rgba(11,92,171,.38)}
-.brandtxt .wordmark{font-size:13px;font-weight:800;letter-spacing:.6px;color:var(--brand);display:flex;align-items:baseline;gap:7px}
-.brandtxt .wordmark span{color:var(--faint);font-weight:600;letter-spacing:0;font-size:11px}
-.brandtxt h1{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-top:3px}
+.koica-logo{height:30px;width:auto;display:block}
+.koica-word{display:none;font-weight:900;font-size:30px;letter-spacing:-1.5px;color:var(--brand);line-height:1}
+.divider-v{width:1px;align-self:stretch;min-height:42px;background:var(--border)}
+.brandtxt h1{font-size:21px;font-weight:800;letter-spacing:-.4px}
 .brandtxt .sub{color:var(--muted);font-size:12px;margin-top:6px}
 .brandtxt .sub a{color:var(--brand);border-bottom:1px dotted var(--brand)}
 .kpi{border-radius:16px} .panel{border-radius:16px} .chip{border-radius:22px}
 .kpi{transition:.14s} .kpi:hover{transform:translateY(-1px)}
-@media(max-width:760px){.brandtxt h1{font-size:18px}.logo{width:46px;height:46px}}
+@media(max-width:760px){.brandtxt h1{font-size:18px}.koica-logo{height:26px}.koica-word{font-size:26px}}
+/* ===== 요약 시각화 ===== */
+.charts{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:0;padding:16px 20px;margin-bottom:16px}
+.chartcard{padding:0 20px;border-right:1px solid var(--border2)}
+.chartcard:last-child{border-right:0}
+.chartcard .ct{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between}
+.chartcard .ct b{color:var(--txt)}
+.stack{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--border2)}
+.stack i{display:block;height:100%}
+.slegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px}
+.slegend span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slegend b{color:var(--txt);font-weight:700}
+.hbars{display:flex;flex-direction:column;gap:9px}
+.hbar{display:grid;grid-template-columns:64px 1fr 28px;align-items:center;gap:8px;font-size:11.5px}
+.hbar .hl{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar .ht{position:relative;height:9px;background:var(--border2);border-radius:5px;overflow:hidden}
+.hbar .ht i{position:absolute;left:0;top:0;height:100%;border-radius:5px;background:var(--accent)}
+.hbar .hv{text-align:right;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+@media(max-width:760px){.charts{grid-template-columns:1fr}.chartcard{border-right:0;border-bottom:1px solid var(--border2);padding:14px 0}.chartcard:last-child{border-bottom:0}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="hero">
     <div class="brand">
-      <div class="logo" aria-label="KOICA">
-        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
-          <circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/>
-          <path d="M3.2 12h17.6M4.8 7h14.4M4.8 17h14.4"/>
-        </svg>
-      </div>
+      <img id="koicaImg" class="koica-logo" src="koica-logo.png" alt="KOICA"
+           onerror="this.style.display='none';document.getElementById('koicaWord').style.display='inline-block'">
+      <span id="koicaWord" class="koica-word">KOICA</span>
+      <div class="divider-v"></div>
       <div class="brandtxt">
-        <div class="wordmark">KOICA <span>한국국제협력단</span></div>
         <h1>현지입찰공고 대시보드</h1>
         <div class="sub">출처: <a href="https://nebid.koica.go.kr/oep/lobi/localBidManageList.do?P_PRCURE_BSNS_SE_CD=ABID" target="_blank">KOICA전자조달시스템-현지입찰공고</a> &nbsp;·&nbsp; 기준일시 <span id="meta"></span></div>
       </div>
@@ -200,6 +214,8 @@ tbody tr:hover{background:var(--panel2)}
   </div>
 
   <div class="kpis" id="kpis"></div>
+
+  <div class="panel charts" id="charts"></div>
 
   <div class="panel tools">
     <div class="filtrow">
@@ -289,8 +305,8 @@ const DATA=(window.BIDS||[]).map(b=>{
   else {status='개찰완료';scls='gray';ddayVal=od?diffDays(today,od):null;ddayLabel='개찰경과';}
   return {...b,_nd:nd,_dl:dl,_od:od,span,urgent,status,scls,ddayVal,ddayLabel};
 })
-// 현재 관련 공고만: 개찰완료 후 100일 초과는 제외 (진행/임박/공고예정/개찰예정/최근개찰만 표시)
-.filter(b=> !(b.status==='개찰완료' && b._od && diffDays(today,b._od)>100));
+// 현재 관련 공고만: 개찰완료 후 90일 초과는 제외 (진행/임박/공고예정/개찰예정/최근개찰만 표시)
+.filter(b=> !(b.status==='개찰완료' && b._od && diffDays(today,b._od)>90));
 DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
 /* ===== state ===== */
@@ -462,13 +478,35 @@ function renderGantt(rows){
   g.appendChild(frag);
 }
 
+/* ===== 요약 시각화 ===== */
+function renderCharts(rows){
+  const c=$('#charts'); if(!c) return;
+  const total=rows.length||1;
+  const stOrder=[['접수중','green'],['마감임박','amber'],['개찰예정','blue'],['공고예정','violet'],['개찰완료','gray']];
+  const stc={}; rows.forEach(b=>stc[b.status]=(stc[b.status]||0)+1);
+  const seg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<i style="width:${stc[s]/total*100}%;background:var(--${cl})" title="${s} ${stc[s]}"></i>`).join('');
+  const leg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<span><i class="dotmark" style="background:var(--${cl})"></i>${s} <b>${stc[s]}</b></span>`).join('');
+  const rgc={}; rows.forEach(b=>rgc[b.rg]=(rgc[b.rg]||0)+1);
+  const rgMax=Math.max(1,...Object.values(rgc));
+  const rgBars=RGS.filter(r=>rgc[r]).sort((a,b)=>rgc[b]-rgc[a]).map(r=>`<div class="hbar"><span class="hl">${r.replace('/공통','')}</span><span class="ht"><i style="width:${rgc[r]/rgMax*100}%"></i></span><span class="hv">${rgc[r]}</span></div>`).join('');
+  const tyc={}; rows.forEach(b=>tyc[b.ty]=(tyc[b.ty]||0)+1);
+  const tyMax=Math.max(1,...Object.values(tyc));
+  const tyCl={'공사':'amber','물품':'blue','용역':'violet'};
+  const tyBars=['공사','물품','용역'].filter(t=>tyc[t]).map(t=>`<div class="hbar"><span class="hl">${t}</span><span class="ht"><i style="width:${tyc[t]/tyMax*100}%;background:var(--${tyCl[t]})"></i></span><span class="hv">${tyc[t]}</span></div>`).join('');
+  const none='<span style="color:var(--faint);font-size:11.5px">해당 없음</span>';
+  c.innerHTML=`
+    <div class="chartcard"><div class="ct">상태 분포 <b>${rows.length}건</b></div><div class="stack">${seg||'<i style="width:100%;background:var(--border2)"></i>'}</div><div class="slegend">${leg||none}</div></div>
+    <div class="chartcard"><div class="ct">권역별</div><div class="hbars">${rgBars||none}</div></div>
+    <div class="chartcard"><div class="ct">계약구분</div><div class="hbars">${tyBars||none}</div></div>`;
+}
+
 /* ===== apply ===== */
 function apply(){
   const rows=filtered();
   $('#cnt').textContent=rows.length;
   const ug=rows.filter(b=>b.urgent===true).length, ng=rows.filter(b=>b.urgent===false).length;
   $('#urgentNote').innerHTML=`긴급 <b style="color:var(--red)">${ug}</b> · 일반 <b>${ng}</b>`;
-  renderKPIs();renderFilters();renderHead();
+  renderKPIs();renderFilters();renderHead();renderCharts(rows);
   if(state.view==='table')renderTable(rows);else renderGantt(rows);
 }
 
@@ -487,7 +525,7 @@ $('#themeBtn').onclick=()=>{const cur=document.documentElement.getAttribute('dat
 
 /* meta: 기준일시 = 데이터 수집 시각(KST). window.BUILT 없으면 접속일로 대체 */
 $('#meta').textContent=(window.BUILT ? window.BUILT : today.toISOString().slice(0,10))+' KST';
-$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 100일 초과 공고는 표시에서 제외';
+$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 90일 초과 공고는 표시에서 제외';
 
 apply();
 </script>
