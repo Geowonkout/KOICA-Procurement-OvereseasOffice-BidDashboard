@@ -574,7 +574,7 @@ function renderCalendar(rows){
       const k=yr+'-'+mo+'-'+dd;
       const isToday=(yr===today.getFullYear()&&mo===today.getMonth()&&dd===today.getDate());
       const list=(byDay[k]||[]).sort((a,b)=>a.t.localeCompare(b.t));
-      const chips=list.map(e=>`<div class="cal-ev ${e.t==='마감'?'ev-dl':'ev-od'}" title="${e.t} · ${e.b.no} · ${e.b.nm}">${e.t[0]} ${e.b.co}</div>`).join('');
+      const chips=list.map(e=>`<div class="cal-ev ${e.t==='마감'?'ev-dl':'ev-od'}" title="${e.t} · ${e.b.no} · ${e.b.nm}">(${e.t[0]}) ${e.b.co}</div>`).join('');
       html+=`<div class="cal-cell${isToday?' today':''}"><div class="cal-dnum">${dd}</div>${chips}</div>`;
     }
     html+='</div></div>';
