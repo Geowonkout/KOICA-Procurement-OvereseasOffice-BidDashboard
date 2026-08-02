@@ -109,7 +109,9 @@ input[type=text]{min-width:200px}
 table{border-collapse:collapse;width:100%;font-size:12.8px}
 thead th{position:sticky;top:0;background:var(--panel);border-bottom:2px solid var(--border);text-align:left;padding:10px 10px;font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;cursor:pointer;user-select:none;z-index:2}
 thead th:hover{color:var(--txt)}
-thead th .ar{color:var(--accent);font-size:10px;margin-left:2px}
+thead th .ar{font-size:10px;margin-left:3px}
+thead th .ar.on{color:var(--accent);font-weight:900}
+thead th .ar.mute{color:var(--faint);opacity:.45;font-size:9px}
 tbody td{border-bottom:1px solid var(--border2);padding:9px 10px;vertical-align:middle}
 tbody tr:hover{background:var(--panel2)}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--muted)}
@@ -380,7 +382,7 @@ function renderKPIs(){
 /* ===== table ===== */
 const COLS=[
   ['no','공고번호','num'],['nm','입찰명',''],['rg','권역','num'],['co','국가','num'],['ty','조달구분','num'],
-  ['ur','긴급도','num'],['mg','담당자','num'],
+  ['ur','긴급도','num'],
   ['nd','공고일','num'],['dl','마감일','num'],['od','개찰일','num'],
   ['status','상태','num'],['dday','D-day','num'],['mini','진행','num']
 ];
@@ -388,8 +390,13 @@ function renderHead(){
   const tr=$('#thead');tr.innerHTML='';
   COLS.forEach(([k,label])=>{
     const th=document.createElement('th');th.textContent=label;
-    if(!['mini','ur'].includes(k)){th.onclick=()=>{if(state.sort===k)state.dir*=-1;else{state.sort=k;state.dir=1;}renderTable(filtered());};
-      if(state.sort===k){const s=document.createElement('span');s.className='ar';s.textContent=state.dir>0?'▲':'▼';th.appendChild(s);}}
+    if(!['mini','ur'].includes(k)){
+      th.onclick=()=>{if(state.sort===k)state.dir*=-1;else{state.sort=k;state.dir=1;}renderHead();renderTable(filtered());};
+      const s=document.createElement('span');s.className='ar';
+      if(state.sort===k){s.textContent=state.dir>0?'▲':'▼';s.classList.add('on');}
+      else{s.textContent='↕';s.classList.add('mute');}
+      th.appendChild(s);
+    }
     tr.appendChild(th);
   });
 }
@@ -432,7 +439,6 @@ function renderTable(rows){
       <td class="num"><span class="co">${b.co}</span></td>
       <td class="num"><span class="ty t-${b.ty}">${b.ty}</span></td>
       <td class="num">${urBadge}${b.span!=null?`<div style="font-size:10px;color:var(--faint)">${b.span}일</div>`:''}</td>
-      <td class="num">${b.mg}</td>
       <td class="num">${fmtFull(b.nd)}</td>
       <td class="num">${fmtFull(b.dl)}</td>
       <td class="num">${fmtFull(b.od)}</td>
@@ -442,7 +448,7 @@ function renderTable(rows){
     frag.appendChild(tr);
   });
   tb.appendChild(frag);
-  if(!sorted.length)tb.innerHTML='<tr><td colspan="13"><div class="empty">조건에 맞는 공고가 없습니다.</div></td></tr>';
+  if(!sorted.length)tb.innerHTML='<tr><td colspan="12"><div class="empty">조건에 맞는 공고가 없습니다.</div></td></tr>';
 }
 
 /* ===== gantt ===== */
@@ -499,10 +505,14 @@ function renderCharts(rows){
     const segs=stOrder.filter(([s])=>rgt[r][s]).map(([s,cl])=>`<i style="width:${rgt[r][s]/rgMax*100}%;background:var(--${cl})" title="${r.replace('/공통','')} · ${s} ${rgt[r][s]}"></i>`).join('');
     return `<div class="hbar"><span class="hl">${r.replace('/공통','')}</span><span class="htk">${segs}</span><span class="hv">${rgTot[r]}</span></div>`;
   }).join('');
-  const tyc={}; rows.forEach(b=>tyc[b.ty]=(tyc[b.ty]||0)+1);
-  const tyMax=Math.max(1,...Object.values(tyc));
-  const tyCl={'공사':'amber','물품':'blue','용역':'violet'};
-  const tyBars=['공사','물품','용역'].filter(t=>tyc[t]).map(t=>`<div class="hbar"><span class="hl">${t}</span><span class="ht"><i style="width:${tyc[t]/tyMax*100}%;background:var(--${tyCl[t]})"></i></span><span class="hv">${tyc[t]}</span></div>`).join('');
+  // 조달구분: 상태 색상 스택 막대 (권역별과 동일 방식)
+  const tyt={}; rows.forEach(b=>{(tyt[b.ty]=tyt[b.ty]||{})[b.status]=(tyt[b.ty][b.status]||0)+1;});
+  const tyTot={}; Object.keys(tyt).forEach(t=>tyTot[t]=Object.values(tyt[t]).reduce((a,x)=>a+x,0));
+  const tyMax=Math.max(1,...Object.values(tyTot));
+  const tyBars=['공사','물품','용역'].filter(t=>tyTot[t]).map(t=>{
+    const segs=stOrder.filter(([s])=>tyt[t][s]).map(([s,cl])=>`<i style="width:${tyt[t][s]/tyMax*100}%;background:var(--${cl})" title="${t} · ${s} ${tyt[t][s]}"></i>`).join('');
+    return `<div class="hbar"><span class="hl">${t}</span><span class="htk">${segs}</span><span class="hv">${tyTot[t]}</span></div>`;
+  }).join('');
   const none='<span style="color:var(--faint);font-size:11.5px">해당 없음</span>';
   c.innerHTML=`
     <div class="chartcard"><div class="ct">상태 분포 <b>${rows.length}건</b></div><div class="stack">${seg||'<i style="width:100%;background:var(--border2)"></i>'}</div><div class="slegend">${leg||none}</div></div>
