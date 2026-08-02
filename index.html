@@ -71,6 +71,8 @@ h1,h2,h3{margin:0}
 /* toolbar */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .tools{padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}
+.tools-title{font-size:13px;font-weight:800;color:var(--txt);letter-spacing:-.2px;display:flex;align-items:center;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.tools-title::before{content:"🔍";font-size:12px}
 .filtrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filtrow .lbl{font-size:11.5px;color:var(--faint);font-weight:700;min-width:46px;text-transform:uppercase;letter-spacing:.3px}
 .lbl.help{cursor:help;position:relative;color:var(--muted);outline:none}
@@ -221,11 +223,12 @@ tbody tr:hover{background:var(--panel2)}
   <div class="panel charts" id="charts"></div>
 
   <div class="panel tools">
+    <div class="tools-title">상세검색</div>
     <div class="filtrow">
       <span class="lbl">상태</span><span id="stChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
     <div class="filtrow">
-      <span class="lbl">구분</span><span id="tyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+      <span class="lbl">조달구분</span><span id="tyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
       <span style="width:14px"></span>
       <span class="lbl" style="min-width:auto">긴급도</span><span id="urChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
@@ -314,6 +317,7 @@ DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
 /* ===== state ===== */
 const state={status:'all',ty:new Set(),ur:'all',rg:'all',co:'all',q:'',view:'table',sort:'od',dir:-1,kpi:null};
+let showTy=false;  // 조달구분 막대차트 기본 숨김 (제목 클릭 시 표시)
 
 /* ===== filter options ===== */
 const REGION_ORDER=['동남아시아','서남아태평양','아프리카','유라시아중동','중남미','기타/공통'];
@@ -377,7 +381,7 @@ function renderKPIs(){
 
 /* ===== table ===== */
 const COLS=[
-  ['no','공고번호','num'],['nm','입찰명',''],['rg','권역','num'],['co','국가','num'],['ty','구분','num'],
+  ['no','공고번호','num'],['nm','입찰명',''],['rg','권역','num'],['co','국가','num'],['ty','조달구분','num'],
   ['ur','긴급도','num'],['mg','담당자','num'],
   ['nd','공고일','num'],['dl','마감일','num'],['od','개찰일','num'],
   ['status','상태','num'],['dday','D-day','num'],['mini','진행','num']
@@ -489,14 +493,12 @@ function renderCharts(rows){
   const stc={}; rows.forEach(b=>stc[b.status]=(stc[b.status]||0)+1);
   const seg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<i style="width:${stc[s]/total*100}%;background:var(--${cl})" title="${s} ${stc[s]}"></i>`).join('');
   const leg=stOrder.filter(([s])=>stc[s]).map(([s,cl])=>`<span><i class="dotmark" style="background:var(--${cl})"></i>${s} <b>${stc[s]}</b></span>`).join('');
-  const TYORD=[['공사','amber'],['물품','blue'],['용역','violet']];
-  const tyLeg=TYORD.map(([t,cl])=>`<span><i class="dotmark" style="background:var(--${cl})"></i>${t}</span>`).join('');
-  // 권역별: 계약구분(공사/물품/용역) 색상 스택 막대
-  const rgt={}; rows.forEach(b=>{(rgt[b.rg]=rgt[b.rg]||{})[b.ty]=(rgt[b.rg][b.ty]||0)+1;});
+  // 권역별: 상태 색상 스택 막대
+  const rgt={}; rows.forEach(b=>{(rgt[b.rg]=rgt[b.rg]||{})[b.status]=(rgt[b.rg][b.status]||0)+1;});
   const rgTot={}; Object.keys(rgt).forEach(r=>rgTot[r]=Object.values(rgt[r]).reduce((a,x)=>a+x,0));
   const rgMax=Math.max(1,...Object.values(rgTot));
   const rgBars=RGS.filter(r=>rgTot[r]).sort((a,b)=>rgTot[b]-rgTot[a]).map(r=>{
-    const segs=TYORD.filter(([t])=>rgt[r][t]).map(([t,cl])=>`<i style="width:${rgt[r][t]/rgMax*100}%;background:var(--${cl})" title="${r.replace('/공통','')} · ${t} ${rgt[r][t]}"></i>`).join('');
+    const segs=stOrder.filter(([s])=>rgt[r][s]).map(([s,cl])=>`<i style="width:${rgt[r][s]/rgMax*100}%;background:var(--${cl})" title="${r.replace('/공통','')} · ${s} ${rgt[r][s]}"></i>`).join('');
     return `<div class="hbar"><span class="hl">${r.replace('/공통','')}</span><span class="htk">${segs}</span><span class="hv">${rgTot[r]}</span></div>`;
   }).join('');
   const tyc={}; rows.forEach(b=>tyc[b.ty]=(tyc[b.ty]||0)+1);
@@ -506,8 +508,9 @@ function renderCharts(rows){
   const none='<span style="color:var(--faint);font-size:11.5px">해당 없음</span>';
   c.innerHTML=`
     <div class="chartcard"><div class="ct">상태 분포 <b>${rows.length}건</b></div><div class="stack">${seg||'<i style="width:100%;background:var(--border2)"></i>'}</div><div class="slegend">${leg||none}</div></div>
-    <div class="chartcard"><div class="ct">권역별 <span class="tylg">${tyLeg}</span></div><div class="hbars">${rgBars||none}</div></div>
-    <div class="chartcard"><div class="ct">계약구분</div><div class="hbars">${tyBars||none}</div></div>`;
+    <div class="chartcard"><div class="ct">권역별 <span style="font-size:10px;color:var(--faint);font-weight:500">상태별 색상</span></div><div class="hbars">${rgBars||none}</div></div>
+    <div class="chartcard"><div class="ct ty-toggle" style="cursor:pointer;user-select:none">조달구분 <span style="color:var(--faint);font-size:10px;font-weight:600">${showTy?'▾ 접기':'▸ 보기'}</span></div><div class="hbars" style="${showTy?'':'display:none'}">${tyBars||none}</div></div>`;
+  const tt=c.querySelector('.ty-toggle'); if(tt) tt.onclick=()=>{showTy=!showTy; renderCharts(rows);};
 }
 
 /* ===== apply ===== */
