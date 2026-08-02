@@ -56,7 +56,7 @@ h1,h2,h3{margin:0}
 .theme-btn{background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 11px;cursor:pointer;font-size:12.5px}
 .theme-btn:hover{color:var(--txt)}
 /* kpi */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer;transition:.12s}
 .kpi:hover{border-color:var(--faint)}
 .kpi.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -319,13 +319,11 @@ function renderKPIs(){
   const soon=DATA.filter(b=>b.status==='마감임박').length;
   const open=DATA.filter(b=>b.status==='개찰예정').length;
   const up=DATA.filter(b=>b.status==='공고예정').length;
-  const all=DATA.length;
   const K=[
     ['k-recv','접수중',recv,'접수중'],
     ['k-soon','마감 임박 (7일 이내)',soon,'마감임박'],
     ['k-open','개찰 예정',open,'개찰예정'],
     ['k-soon2','공고 예정',up,'공고예정'],
-    ['k-all','전체 공고',all,'all'],
   ];
   const c=$('#kpis');c.innerHTML='';
   K.forEach(([cls,label,val,st])=>{
