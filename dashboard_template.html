@@ -336,7 +336,7 @@ function renderFilters(){
   RGS.forEach(r=>{const n=rgBase.filter(b=>b.rg===r).length;rg.appendChild(chip(r+' '+n,state.rg===r,null,()=>{state.rg=(state.rg===r?'all':r);state.co='all';apply();}));});
   // country list scoped to selected region
   const coPool = state.rg==='all'?COS:[...new Set(DATA.filter(b=>b.rg===state.rg).map(b=>b.co))].sort((a,b)=>a.localeCompare(b,'ko'));
-  const co=$('#coSel');co.innerHTML='<option value="all">국가 전체</option>'+coPool.map(c=>`<option value="${c}">${c}</option>`).join('');co.value=coPool.includes(state.co)?state.co:'all';co.onchange=()=>{state.co=co.value;apply();};
+  const co=$('#coSel');co.innerHTML='<option value="all">국가</option>'+coPool.map(c=>`<option value="${c}">${c}</option>`).join('');co.value=coPool.includes(state.co)?state.co:'all';co.onchange=()=>{state.co=co.value;apply();};
 }
 
 /* ===== filtering ===== */
