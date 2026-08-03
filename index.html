@@ -347,7 +347,6 @@ DATA.sort((a,b)=> (b.od||'').localeCompare(a.od||''));
 
 /* ===== state ===== */
 const state={status:'all',ty:new Set(),ur:'all',rg:'all',co:'all',q:'',view:'table',sort:'od',dir:-1,kpi:null};
-let showTy=false;  // 조달구분 막대차트 기본 숨김 (제목 클릭 시 표시)
 
 /* ===== filter options ===== */
 const REGION_ORDER=['동남아시아','서남아태평양','아프리카','유라시아중동','중남미','기타/공통'];
@@ -546,8 +545,7 @@ function renderCharts(rows){
   c.innerHTML=`
     <div class="chartcard"><div class="ct">상태 분포 <b>${rows.length}건</b></div><div class="stack">${seg||'<i style="width:100%;background:var(--border2)"></i>'}</div><div class="slegend">${leg||none}</div></div>
     <div class="chartcard"><div class="ct">권역별 <span style="font-size:10px;color:var(--faint);font-weight:500">상태별 색상</span></div><div class="hbars">${rgBars||none}</div></div>
-    <div class="chartcard"><div class="ct ty-toggle" style="cursor:pointer;user-select:none">조달구분 <span style="color:var(--faint);font-size:10px;font-weight:600">${showTy?'▾ 접기':'▸ 보기'}</span></div><div class="hbars" style="${showTy?'':'display:none'}">${tyBars||none}</div></div>`;
-  const tt=c.querySelector('.ty-toggle'); if(tt) tt.onclick=()=>{showTy=!showTy; renderCharts(rows);};
+    <div class="chartcard"><div class="ct">조달구분</div><div class="hbars">${tyBars||none}</div></div>`;
 }
 
 /* ===== 캘린더 (마감·개찰 일정) ===== */
