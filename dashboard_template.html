@@ -71,8 +71,8 @@ h1,h2,h3{margin:0}
 /* toolbar */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .tools{padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}
-.tools-title{font-size:13px;font-weight:800;color:var(--txt);letter-spacing:-.2px;display:flex;align-items:center;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
-.tools-title::before{content:"🔍";font-size:12px}
+.tools-title{font-size:13px;font-weight:800;color:var(--txt);letter-spacing:-.2px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.tools-title .tt-lbl::before{content:"🔍";font-size:12px;margin-right:6px}
 .filtrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filtrow .lbl{font-size:11.5px;color:var(--faint);font-weight:700;min-width:46px;text-transform:uppercase;letter-spacing:.3px}
 .lbl.help{cursor:help;position:relative;color:var(--muted);outline:none}
@@ -154,6 +154,7 @@ tbody tr:hover{background:var(--panel2)}
 .gtoday .flag{position:absolute;top:0;left:3px;font-size:9.5px;color:var(--red);font-weight:700;white-space:nowrap}
 /* legend */
 .legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border2)}
+.legend.legend-top{border-top:0;border-bottom:1px solid var(--border2)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .dotmark{width:9px;height:9px;border-radius:50%;display:inline-block}
 .empty{padding:60px 20px;text-align:center;color:var(--faint)}
@@ -169,9 +170,12 @@ tbody tr:hover{background:var(--panel2)}
 .cal-cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-w)}
 .cal-dnum{font-size:11px;color:var(--muted);font-weight:700;line-height:1}
 .cal-cell.today .cal-dnum{color:var(--accent)}
-.cal-ev{font-size:9.5px;font-weight:700;border-radius:4px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.cal-ev{font-size:9.5px;font-weight:700;border-radius:4px;padding:1px 3px;cursor:default;display:flex;align-items:center;gap:3px;overflow:hidden}
+.cal-ev .ev-t{flex:none}
+.cal-ev .ev-co{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cal-ev.ev-dl{background:var(--amber-bg);color:var(--amber)}
 .cal-ev.ev-od{background:var(--blue-bg);color:var(--blue)}
+.cal-ev .tybox{flex:none;margin-left:auto;font-size:8.5px;font-weight:800;border:1px solid currentColor;border-radius:3px;padding:0 3px;line-height:1.35;opacity:.9}
 .foot{margin-top:18px;color:var(--faint);font-size:11.5px;text-align:center}
 @media(max-width:900px){
   .kpis{grid-template-columns:repeat(2,1fr)}
@@ -240,7 +244,13 @@ tbody tr:hover{background:var(--panel2)}
   <div class="panel charts" id="charts"></div>
 
   <div class="panel tools">
-    <div class="tools-title">상세검색</div>
+    <div class="tools-title"><span class="tt-lbl">상세검색</span>
+      <div class="viewtabs">
+        <button data-v="table" class="on">표</button>
+        <button data-v="gantt">타임라인</button>
+        <button data-v="cal">캘린더</button>
+      </div>
+    </div>
     <div class="filtrow">
       <span class="lbl">권역</span><span id="rgChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
@@ -257,12 +267,6 @@ tbody tr:hover{background:var(--panel2)}
       <select id="coSel"></select>
       <input type="text" id="q" placeholder="입찰명 · 사업명 · 공고번호 검색">
       <button class="chip" id="reset">초기화</button>
-      <span class="spacer"></span>
-      <div class="viewtabs">
-        <button data-v="table" class="on">표</button>
-        <button data-v="gantt">타임라인</button>
-        <button data-v="cal">캘린더</button>
-      </div>
     </div>
     <div class="filtrow" style="margin-top:-2px">
       <span class="count"><b id="cnt">0</b>건 표시</span>
@@ -288,14 +292,14 @@ tbody tr:hover{background:var(--panel2)}
   </div>
 
   <div class="panel" id="ganttView" style="display:none">
-    <div class="gantt" id="gantt"></div>
-    <div class="legend">
+    <div class="legend legend-top">
       <span><i class="dotmark" style="background:var(--gray)"></i>공고일</span>
       <span><i class="dotmark" style="background:var(--amber)"></i>마감일</span>
       <span><i class="dotmark" style="background:var(--blue)"></i>개찰일</span>
       <span><i class="dotmark" style="background:var(--red)"></i>오늘</span>
       <span style="color:var(--faint)">· 막대: 공고→개찰 진행 구간</span>
     </div>
+    <div class="gantt" id="gantt"></div>
   </div>
 
   <div class="panel" id="calView" style="display:none">
@@ -569,7 +573,7 @@ function renderCalendar(rows){
       const k=yr+'-'+mo+'-'+dd;
       const isToday=(yr===today.getFullYear()&&mo===today.getMonth()&&dd===today.getDate());
       const list=(byDay[k]||[]).sort((a,b)=>a.t.localeCompare(b.t));
-      const chips=list.map(e=>`<div class="cal-ev ${e.t==='마감'?'ev-dl':'ev-od'}" title="${e.t} · ${e.b.no} · ${e.b.nm}">(${e.t[0]}) ${e.b.co}</div>`).join('');
+      const chips=list.map(e=>`<div class="cal-ev ${e.t==='마감'?'ev-dl':'ev-od'}" title="${e.t} · ${e.b.ty} · ${e.b.no} · ${e.b.nm}"><span class="ev-t">(${e.t[0]})</span><span class="ev-co">${e.b.co}</span><span class="tybox tb-${e.b.ty}">${e.b.ty}</span></div>`).join('');
       html+=`<div class="cal-cell${isToday?' today':''}"><div class="cal-dnum">${dd}</div>${chips}</div>`;
     }
     html+='</div></div>';
