@@ -176,7 +176,9 @@ tbody tr:hover{background:var(--panel2)}
 .cal-ev.ev-dl{background:var(--amber-bg);color:var(--amber)}
 .cal-ev.ev-od{background:var(--blue-bg);color:var(--blue)}
 .cal-ev .tybox{flex:none;margin-left:auto;font-size:8.5px;font-weight:800;border:1px solid currentColor;border-radius:3px;padding:0 3px;line-height:1.35;opacity:.9}
-.foot{margin-top:18px;color:var(--faint);font-size:11.5px;text-align:center}
+.foot{margin-top:22px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.foot-logo{height:20px;width:auto;display:block}
+.foot-cr{color:var(--faint);font-size:11.5px;text-align:center}
 @media(max-width:900px){
   .kpis{grid-template-columns:repeat(2,1fr)}
   .nm,.nm .pj{max-width:220px}
@@ -233,7 +235,7 @@ tbody tr:hover{background:var(--panel2)}
       <div class="divider-v"></div>
       <div class="brandtxt">
         <h1>현지입찰공고 대시보드</h1>
-        <div class="sub">출처: <a href="https://nebid.koica.go.kr/oep/lobi/localBidManageList.do?P_PRCURE_BSNS_SE_CD=ABID" target="_blank">KOICA전자조달시스템-현지입찰공고</a> &nbsp;·&nbsp; 기준일시 <span id="meta"></span></div>
+        <div class="sub">출처: <a href="https://nebid.koica.go.kr/oep/lobi/localBidManageList.do?P_PRCURE_BSNS_SE_CD=ABID" target="_blank">KOICA전자조달시스템-현지입찰공고</a> &nbsp;·&nbsp; 개찰완료 60일 초과 공고 제외 &nbsp;·&nbsp; 기준일시 <span id="meta"></span></div>
       </div>
     </div>
     <button class="theme-btn" id="themeBtn">◐ 테마</button>
@@ -303,16 +305,19 @@ tbody tr:hover{background:var(--panel2)}
   </div>
 
   <div class="panel" id="calView" style="display:none">
-    <div id="cal"></div>
-    <div class="legend">
+    <div class="legend legend-top">
       <span><i class="dotmark" style="background:var(--amber)"></i>마감(마)</span>
       <span><i class="dotmark" style="background:var(--blue)"></i>개찰(개)</span>
       <span><i class="dotmark" style="background:var(--accent)"></i>오늘</span>
       <span style="color:var(--faint)">· 필터 조건에 맞는 마감·개찰 일정만 표시</span>
     </div>
+    <div id="cal"></div>
   </div>
 
-  <div class="foot">KOICA 현지입찰공고 데이터 기반 · 상태는 접속일 기준 자동 계산 · <span id="foot2"></span></div>
+  <div class="foot">
+    <span class="logo-wrap" style="padding:5px 9px"><img id="footLogo" class="foot-logo" alt="KOICA"></span>
+    <div class="foot-cr">© 2026 KOICA 한국국제협력단 · 자료: KOICA 전자조달시스템 현지입찰공고</div>
+  </div>
 </div>
 
 <script src="data.min.js"></script>
@@ -609,7 +614,7 @@ $('#themeBtn').onclick=()=>{const cur=document.documentElement.getAttribute('dat
 
 /* meta: 기준일시 = 데이터 수집 시각(KST). window.BUILT 없으면 접속일로 대체 */
 $('#meta').textContent=(window.BUILT ? window.BUILT : today.toISOString().slice(0,10))+' KST';
-$('#foot2').textContent='상태·D-day는 접속 시점 기준 · 개찰완료 60일 초과 공고는 표시에서 제외';
+{const _hl=document.querySelector('.koica-logo');const _fl=$('#footLogo');if(_hl&&_fl)_fl.src=_hl.src;}
 
 apply();
 </script>
