@@ -242,15 +242,15 @@ tbody tr:hover{background:var(--panel2)}
   <div class="panel tools">
     <div class="tools-title">상세검색</div>
     <div class="filtrow">
+      <span class="lbl">권역</span><span id="rgChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+    </div>
+    <div class="filtrow">
       <span class="lbl">상태</span><span id="stChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
     <div class="filtrow">
       <span class="lbl">조달구분</span><span id="tyChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
       <span style="width:14px"></span>
       <span class="lbl" style="min-width:auto">긴급도</span><span id="urChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
-    </div>
-    <div class="filtrow">
-      <span class="lbl">권역</span><span id="rgChips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
     </div>
     <div class="filtrow">
       <span class="lbl">필터</span>
@@ -412,7 +412,7 @@ const COLS=[
   ['no','공고번호','num'],['nm','입찰명',''],['rg','권역','num'],['co','국가','num'],['ty','조달구분','num'],
   ['ur','긴급도','num'],
   ['nd','공고일','num'],['dl','마감일','num'],['od','개찰일','num'],
-  ['status','상태','num'],['dday','D-day','num'],['mini','진행','num']
+  ['status','상태','num'],['dday','D-day','num']
 ];
 function renderHead(){
   const tr=$('#thead');tr.innerHTML='';
@@ -457,7 +457,7 @@ function renderTable(rows){
   sorted.forEach(b=>{
     const tr=document.createElement('tr');
     const dday = b.ddayVal==null?'—':
-       (b.status==='개찰완료'?`<span class="num">${b.ddayVal}일 전</span>`:
+       (b.status==='개찰완료'?`<span class="dday" style="color:var(--muted)">D+${b.ddayVal}</span>`:
         `<span class="dday" style="color:var(--${b.scls==='amber'?'amber':b.scls==='green'?'green':b.scls==='blue'?'blue':b.scls==='violet'?'violet':'muted'})">D-${b.ddayVal}</span>`);
     const urBadge = b.urgent==null?'—':(b.urgent?'<span class="badge b-red">긴급</span>':'<span class="badge b-gray">일반</span>');
     tr.innerHTML=`
@@ -471,12 +471,11 @@ function renderTable(rows){
       <td class="num">${fmtFull(b.dl)}</td>
       <td class="num">${fmtFull(b.od)}</td>
       <td class="num"><span class="badge b-${b.scls}">${b.status}</span></td>
-      <td class="num">${dday}<div style="font-size:10px;color:var(--faint)">${b.ddayLabel||''}</div></td>
-      <td class="num">${miniHTML(b)}</td>`;
+      <td class="num">${dday}<div style="font-size:10px;color:var(--faint)">${b.ddayLabel||''}</div></td>`;
     frag.appendChild(tr);
   });
   tb.appendChild(frag);
-  if(!sorted.length)tb.innerHTML='<tr><td colspan="12"><div class="empty">조건에 맞는 공고가 없습니다.</div></td></tr>';
+  if(!sorted.length)tb.innerHTML='<tr><td colspan="11"><div class="empty">조건에 맞는 공고가 없습니다.</div></td></tr>';
 }
 
 /* ===== gantt ===== */
